@@ -122,6 +122,7 @@
     text-align: left;
     font-size: var(--font-size-medium);
     height: 100%;
+    max-width: 263px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -183,10 +184,11 @@
 
     .search-bar {
         flex-direction: column;
+        min-width: 266px;
         padding: 0.1rem 0.2rem;
     }
 
-    .trendig-product {
+    .trending-product {
       margin-bottom: 1rem;
     }
 
