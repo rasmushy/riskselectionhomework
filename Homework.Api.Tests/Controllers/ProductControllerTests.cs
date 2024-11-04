@@ -1,139 +1,81 @@
 using System.Collections.Generic;
-using System.Net;
-using System.Net.Http;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Homework.Api.Controllers;
 using Homework.Api.Models;
-using Homework.Api.Services;
+using Homework.Api.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
+using Moq;
 using Xunit;
 
-/// <summary>
-/// Tests for the ProductsController class to ensure API endpoints return expected results
-/// <author>Rasmus Hyyppä</author>
-/// </summary>
-public class ProductControllerTests
+namespace Homework.Api.Tests.Controllers
 {
-    private readonly ProductsController _controller;
-
-    public ProductControllerTests()
-    {
-        var options = Options.Create(new ProductSourceOptions { ProductSourceUrls = new List<string> { "https://mockurl.com" } });
-        var httpClient = new HttpClient(new MockHttpMessageHandler());
-        var productService = new ProductService(httpClient, options);
-        _controller = new ProductsController(productService);
-    }
-
     /// <summary>
-    /// Tests that GetProducts returns an OkObjectResult containing a non-empty list of products.
+    /// Unit tests for the <see cref="ProductsController"/> class.
     /// </summary>
-    /// <returns>Asserts that the response contains a list of products with at least one item.</returns>
-    [Fact]
-    public async Task GetProducts_ReturnsOkResultWithProducts()
+    /// <author>Rasmus Hyyppä</author>
+    public class ProductControllerTests
     {
-        var result = await _controller.GetProducts();
+        private readonly ProductsController _controller;
+        private readonly Mock<IProductService> _productServiceMock;
+        private readonly Mock<ILogger<ProductsController>> _loggerMock;
 
-        var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var returnedProducts = Assert.IsType<List<Product>>(okResult.Value);
-        Assert.NotEmpty(returnedProducts);
-    }
-
-    /// <summary>
-    /// Tests that GetProducts returns an OkObjectResult containing an empty list
-    /// when no products are available.
-    /// </summary>
-    /// <returns>Asserts that the response contains an empty list.</returns>
-    [Fact]
-    public async Task GetProducts_ReturnsEmptyListWhenNoProducts()
-    {
-        var httpClient = new HttpClient(new MockHttpMessageHandler(returnEmptyList: true));
-        var productService = new ProductService(httpClient, Options.Create(new ProductSourceOptions()));
-        var controller = new ProductsController(productService);
-
-        var result = await controller.GetProducts();
-
-        var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var returnedProducts = Assert.IsType<List<Product>>(okResult.Value);
-        Assert.Empty(returnedProducts);
-    }
-
-    /// <summary>
-    /// Tests that GetProducts returns products with expected field values populated.
-    /// </summary>
-    /// <returns>Asserts that the returned products have all required fields set correctly.</returns>
-    [Fact]
-    public async Task GetProducts_ReturnsProductsWithExpectedFields()
-    {
-        var result = await _controller.GetProducts();
-
-        var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var returnedProducts = Assert.IsType<List<Product>>(okResult.Value);
-        var product = returnedProducts[0];
-
-        Assert.NotNull(product.Title);
-        Assert.NotNull(product.Brand);
-        Assert.Equal(30, product.Price);
-        Assert.Equal(15, product.DiscountPercentage);
-        Assert.Equal(4.5f, product.Rating);
-    }
-
-    /// <summary>
-    /// Tests that GetProducts returns a filtered list of products based on discount criteria.
-    /// Only products with a DiscountPercentage of 10 or higher should be returned.
-    /// </summary>
-    /// <returns>Asserts that only products meeting the discount criteria are returned.</returns>
-    [Fact]
-    public async Task GetProducts_ReturnsFilteredProductsBasedOnCriteria()
-    {
-        var result = await _controller.GetProducts();
-        var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var returnedProducts = Assert.IsType<List<Product>>(okResult.Value);
-
-        Assert.Single(returnedProducts);
-        Assert.Equal("Product 2", returnedProducts[0].Title);
-        Assert.True(returnedProducts[0].DiscountPercentage >= 10);
-    }
-
-    /// <summary>
-    /// MockHttpMessageHandler simulates an HTTP response for ProductService.
-    /// Returns either a predefined list of products or an empty list based on configuration.
-    /// </summary>
-    private class MockHttpMessageHandler : HttpMessageHandler
-    {
-        private readonly bool _returnEmptyList;
-
-        /// <param name="returnEmptyList">Determines whether to return an empty list of products.</param>
-        public MockHttpMessageHandler(bool returnEmptyList = false)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ProductControllerTests"/> class, setting up mocks and the controller under test.
+        /// </summary>
+        public ProductControllerTests()
         {
-            _returnEmptyList = returnEmptyList;
+            _productServiceMock = new Mock<IProductService>();
+            _loggerMock = new Mock<ILogger<ProductsController>>();
+            _controller = new ProductsController(_productServiceMock.Object, _loggerMock.Object);
         }
 
         /// <summary>
-        /// Sends a mocked HTTP response with predefined JSON data.
+        /// Tests that <see cref="ProductsController.GetProducts"/> returns a <see cref="NotFoundObjectResult"/> with a message if the product list is empty.
         /// </summary>
-        /// <param name="request">The HTTP request message.</param>
-        /// <param name="cancellationToken">A cancellation token for the async operation.</param>
-        /// <returns>An HTTP response message with JSON content.</returns>
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, System.Threading.CancellationToken cancellationToken)
+        [Fact]
+        public async Task GetProducts_ReturnsNotFound_WhenServiceReturnsEmpty()
         {
-            var products = _returnEmptyList
-                ? new { products = new List<Product>() }
-                : new
-                {
-                    products = new List<Product>
-                    {
-                        new Product { Id = 1, Title = "Product 1", Brand = "Brand A", Price = 20, DiscountPercentage = 5, Rating = 3.69f },
-                        new Product { Id = 2, Title = "Product 2", Brand = "Brand B", Price = 30, DiscountPercentage = 15, Rating = 4.5f }
-                    }
-                };
-                
-            var json = JsonSerializer.Serialize(products);
-            return new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json")
-            };
+            _productServiceMock.Setup(service => service.GetProductsAsync()).ReturnsAsync(new List<Product>());
+
+            var result = await _controller.GetProducts();
+            var notFoundResult = Assert.IsType<NotFoundObjectResult>(result.Result);
+            var returnedMessage = Assert.IsType<string>(notFoundResult.Value);
+            Assert.Equal("No products available.", returnedMessage);
+        }
+
+        /// <summary>
+        /// Tests that <see cref="ProductsController.GetProducts"/> returns <see cref="NotFoundObjectResult"/> when the product service returns null.
+        /// </summary>
+        [Fact]
+        public async Task GetProducts_ReturnsNotFound_WhenServiceReturnsNull()
+        {
+            _productServiceMock.Setup(service => service.GetProductsAsync()).ReturnsAsync((List<Product>?)null);
+
+            var result = await _controller.GetProducts();
+            var notFoundResult = Assert.IsType<NotFoundObjectResult>(result.Result);
+            Assert.Equal("No products available.", notFoundResult.Value);
+        }
+
+        /// <summary>
+        /// Tests that <see cref="ProductsController.GetProducts"/> logs an error and returns an <see cref="ObjectResult"/> if the service throws an exception.
+        /// </summary>
+        [Fact]
+        public async Task GetProducts_LogsError_WhenServiceThrowsException()
+        {
+            _productServiceMock.Setup(service => service.GetProductsAsync()).ThrowsAsync(new System.Exception("Service error"));
+
+            var result = await _controller.GetProducts();
+
+            Assert.NotNull(result);
+            Assert.IsType<ObjectResult>(result.Result);
+
+            _loggerMock.Verify(log => log.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("An unexpected error occurred while fetching products.")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()), Times.Once);
         }
     }
 }

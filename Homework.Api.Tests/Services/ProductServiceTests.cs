@@ -1,113 +1,120 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
-using System.Text.Json;
 using System.Threading.Tasks;
-using Homework.Api.Interfaces;
-using Homework.Api.Models;
 using Homework.Api.Services;
+using Homework.Api.Infrastructure;
+using Homework.Api.Models;
+using Homework.Api.Exceptions;
+using Homework.Api.Tests.Helpers;  
 using Microsoft.Extensions.Options;
 using Moq;
 using Moq.Protected;
 using Xunit;
+using Microsoft.Extensions.Logging;
 
-/// <summary>
-/// Tests for the ProductService class
-/// <author>Rasmus Hyyppä</author>
-/// </summary>
-public class ProductServiceTests
+namespace Homework.Api.Tests.Services
 {
-    private readonly ProductService _productService;
-    private readonly Mock<HttpMessageHandler> _httpMessageHandlerMock;
-
-    public ProductServiceTests()
-    {
-        _httpMessageHandlerMock = new Mock<HttpMessageHandler>();
-
-        var httpClient = new HttpClient(_httpMessageHandlerMock.Object);
-        var options = Options.Create(new ProductSourceOptions
-        {
-            ProductSourceUrls = new List<string> { "https://dummyjson.com/products" }
-        });
-
-        _productService = new ProductService(httpClient, options);
-    }
-
     /// <summary>
-    /// Tests that GetProductsAsync filters products by discount percentage (>= 10).
+    /// Unit tests for the <see cref="ProductService"/> class.
     /// </summary>
-    [Fact]
-    public async Task GetProductsAsync_ReturnsFilteredProducts()
+    /// <author>Rasmus Hyyppä</author>
+    public class ProductServiceTests
     {
-        var mockResponse = new HttpResponseMessage(HttpStatusCode.OK)
+        private readonly ProductService _productService;
+        private readonly Mock<HttpMessageHandler> _httpMessageHandlerMock;
+        private readonly Mock<ILogger<ProductService>> _loggerMock;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ProductServiceTests"/> class, setting up mocks and the service under test.
+        /// </summary>
+        public ProductServiceTests()
         {
-            Content = new StringContent("{\"products\": [{ \"id\": 1, \"title\": \"Product 1\", \"brand\": \"Brand A\", \"price\": 20, \"discountPercentage\": 15, \"rating\": 4.5 } ]}")
-        };
-        
-        _httpMessageHandlerMock.Protected()
-            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(mockResponse);
+            _httpMessageHandlerMock = new Mock<HttpMessageHandler>();
+            _loggerMock = new Mock<ILogger<ProductService>>();
 
-        var result = await _productService.GetProductsAsync();
+            var httpClient = new HttpClient(_httpMessageHandlerMock.Object);
+            var options = Options.Create(new ProductSourceOptions
+            {
+                ProductSourceUrls = new List<string> { "https://dummyjson.com/products" }
+            });
 
-        Assert.Single(result);
-        Assert.Equal("Product 1", result[0].Title);
-        Assert.True(result[0].DiscountPercentage >= 10);
-    }
+            _productService = new ProductService(new ProductApiClient(httpClient, options), _loggerMock.Object);
+        }
 
-    /// <summary>
-    /// Tests that GetProductsAsync returns an empty list when no products meet the discount criteria.
-    /// </summary>
-    [Fact]
-    public async Task GetProductsAsync_ReturnsEmptyListWhenNoProductsMeetCriteria()
-    {
-        var mockResponse = new HttpResponseMessage(HttpStatusCode.OK)
+        /// <summary>
+        /// Tests that <see cref="ProductService.GetProductsAsync"/> returns an empty list when the API response is empty.
+        /// </summary>
+        [Fact]
+        public async Task GetProductsAsync_ReturnsEmptyList_WhenApiReturnsEmptyResponse()
         {
-            Content = new StringContent("{\"products\": [{ \"id\": 2, \"title\": \"Product 2\", \"brand\": \"Brand B\", \"price\": 10, \"discountPercentage\": 5 } ]}")
-        };
+            MockHttpHelper.SetupHttpClientResponse(_httpMessageHandlerMock, "{\"products\": []}", HttpStatusCode.OK);
 
-        _httpMessageHandlerMock.Protected()
-            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(mockResponse);
+            var result = await _productService.GetProductsAsync();
+            Assert.Empty(result);
+        }
 
-        var result = await _productService.GetProductsAsync();
-
-        Assert.Empty(result);
-    }
-
-    /// <summary>
-    /// Tests that GetProductsAsync throws an HttpRequestException when an invalid URL is used.
-    /// </summary>
-    [Fact]
-    public async Task GetProductsAsync_ReturnsErrorOnInvalidUrl()
-    {
-      var mockResponse = new HttpResponseMessage(HttpStatusCode.NotFound);
-      _httpMessageHandlerMock.Protected()
-        .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
-        .ReturnsAsync(mockResponse);
-
-      await Assert.ThrowsAsync<HttpRequestException>(() => _productService.GetProductsAsync());
-    }
-
-    /// <summary>
-    /// Tests that GetTrendingProduct returns the product with the highest rating from a given list.
-    /// </summary>
-    /// <param name="products"> The list of products to evalutate.</param>
-    /// <returns> Returns the product with the highest rating.
-    [Fact]
-    public void GetTrendingProduct_ReturnsProductWithHighestRating()
-    {
-        var products = new List<Product>
+        /// <summary>
+        /// Tests that <see cref="ProductService.GetProductsAsync"/> throws a <see cref="JsonParseException"/> when the API response contains malformed JSON.
+        /// </summary>
+        [Fact]
+        public async Task GetProductsAsync_ThrowsJsonParseException_WhenJsonIsMalformed()
         {
-            new Product { Id = 1, Title = "Product 1", Rating = 4.0f },
-            new Product { Id = 2, Title = "Product 2", Rating = 4.8f }, 
-            new Product { Id = 3, Title = "Product 3", Rating = 3.9f }
-        };
+            MockHttpHelper.SetupHttpClientResponse(_httpMessageHandlerMock, "{ malformed_json: true }", HttpStatusCode.OK);
 
-        var trendingProduct = _productService.GetTrendingProduct(products);
+            await Assert.ThrowsAsync<JsonParseException>(() => _productService.GetProductsAsync());
+        }
 
-        Assert.NotNull(trendingProduct);
-        Assert.Equal(2, trendingProduct.Id);
-        Assert.Equal("Product 2", trendingProduct.Title);
+        /// <summary>
+        /// Tests that <see cref="ProductService.GetProductsAsync"/> throws a <see cref="ServiceUnavailableException"/> when the HTTP request fails.
+        /// </summary>
+        [Fact]
+        public async Task GetProductsAsync_ThrowsServiceUnavailableException_WhenHttpRequestFails()
+        {
+            _httpMessageHandlerMock.Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .ThrowsAsync(new HttpRequestException("Simulated HTTP request failure"));
+
+            await Assert.ThrowsAsync<ServiceUnavailableException>(() => _productService.GetProductsAsync());
+        }
+
+        /// <summary>
+        /// Tests that <see cref="ProductService.GetProductsAsync"/> ignores products with missing required fields in the response.
+        /// </summary>
+        [Fact]
+        public async Task GetProductsAsync_IgnoresProductsWithMissingFields()
+        {
+            var responseContent = "{\"products\": [" +
+                                  "{ \"id\": 1, \"title\": null, \"brand\": \"Brand A\", \"price\": 20, \"discountPercentage\": 15 }," +
+                                  "{ \"id\": 2, \"title\": \"Product 2\", \"brand\": null, \"price\": 30, \"discountPercentage\": 10 }" +
+                                  "]}";
+
+            MockHttpHelper.SetupHttpClientResponse(_httpMessageHandlerMock, responseContent, HttpStatusCode.OK);
+
+            var result = await _productService.GetProductsAsync();
+            Assert.Empty(result);
+        }
+
+        /// <summary>
+        /// Tests that <see cref="ProductService.GetProductsAsync"/> returns only valid products when the API response includes invalid products.
+        /// </summary>
+        [Fact]
+        public async Task GetProductsAsync_ReturnsOnlyValidProducts_WhenSomeProductsAreInvalid()
+        {
+            var responseContent = "{\"products\": [" +
+                "{ \"id\": 1, \"title\": \"Valid Product\", \"brand\": \"Brand A\", \"price\": 20, \"discountPercentage\": 15 }," +
+                "{ \"id\": 2, \"title\": \"Invalid Product\", \"brand\": \"\", \"price\": 20, \"discountPercentage\": 5 }" +
+                "]}";
+
+            MockHttpHelper.SetupHttpClientResponse(_httpMessageHandlerMock, responseContent, HttpStatusCode.OK);
+
+            var result = await _productService.GetProductsAsync();
+
+            Assert.Single(result);
+            Assert.Equal("Valid Product", result[0].Title);
+        }
     }
 }

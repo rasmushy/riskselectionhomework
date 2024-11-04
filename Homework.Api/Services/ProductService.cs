@@ -1,62 +1,58 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Homework.Api.Interfaces;
 using Homework.Api.Models;
-using Microsoft.Extensions.Options;
+using Homework.Api.Exceptions;
+using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 namespace Homework.Api.Services
 {
-  public class ProductService : IProductService
-  {
-    private readonly HttpClient _httpClient;
-    private readonly ProductSourceOptions _options;
-
-    public ProductService(HttpClient httpClient, IOptions<ProductSourceOptions> options)
+    public class ProductService : IProductService
     {
-      _httpClient = httpClient;
-      _options = options.Value;
-    }
+        private readonly IProductApiClient _productApiClient;
+        private readonly ILogger<ProductService> _logger;
 
-    public async Task<List<Product>> GetProductsAsync()
-    {
-      var products = new List<Product>();
-
-      foreach (var url in _options.ProductSourceUrls)
-      {
-        var response = await _httpClient.GetAsync(url);
-        if (!response.IsSuccessStatusCode)
+        public ProductService(IProductApiClient productApiClient, ILogger<ProductService> logger)
         {
-          throw new HttpRequestException($"Request to {url} failed with status code {response.StatusCode}");
+            _productApiClient = productApiClient ?? throw new ArgumentNullException(nameof(productApiClient));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        var jsonString = await response.Content.ReadAsStringAsync();
-        var jsonDoc = JsonDocument.Parse(jsonString);
+        public async Task<List<Product>> GetProductsAsync()
+        {
+            _logger.LogInformation("Starting product fetch from external API.");
 
-        var sourceProducts = jsonDoc.RootElement.GetProperty("products").Deserialize<List<Product>>(new JsonSerializerOptions
+            try
             {
-            PropertyNameCaseInsensitive = true
-            });
+                var products = await _productApiClient.FetchProductsAsync();
 
-        if (sourceProducts != null)
-        {
-          products.AddRange(sourceProducts.Where(p => p.DiscountPercentage >= 10 && !string.IsNullOrEmpty(p.Brand)));
+                var filteredProducts = FilterValidProducts(products);
+                _logger.LogInformation("{Count} products passed the filter criteria.", filteredProducts.Count);
+
+                return filteredProducts;
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "Failed to parse products from API response.");
+                throw new JsonParseException("Invalid JSON format in product data", ex);
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError(ex, "Failed to fetch products due to a network issue.");
+                throw new ServiceUnavailableException("External service is unavailable", ex);
+            }
         }
-      }
 
-      Console.WriteLine("Filtered Products:");
-      foreach (var product in products) 
-      {
-        Console.WriteLine($"{product.Title} - Discount: {product.DiscountPercentage}");
-      }
-      return products;
+        private List<Product> FilterValidProducts(IEnumerable<Product> products)
+        {
+            return products
+                .Where(p => 
+                    p.DiscountPercentage >= 10 && 
+                    !string.IsNullOrEmpty(p.Brand) && 
+                    !string.IsNullOrEmpty(p.Title))
+                .ToList();
+        }
     }
-
-    public Product GetTrendingProduct(List<Product> products)
-    {
-      return products.OrderByDescending(p => p.Rating).FirstOrDefault();
-    }
-  }
 }
