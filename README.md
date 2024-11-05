@@ -16,20 +16,20 @@
 
 ## Screenshots
 
-[Desktop View](./assets/desktop-screenshot.jpg)
+![Desktop View](./assets/desktop-screenshot.jpg)
 
-[Mobile View](./assets/mobile-screenshot.jpg)
+![Mobile View](./assets/mobile-screenshot.jpg)
 
 ## Project Structure
 ```
   ~/riskselectionhomework
-   Homework.Api                                   # Backend API in ASP.NET Core
-     Controllers                                  # API controllers for managing requests 
+   Homework.Api                             # Backend API in ASP.NET Core
+     Controllers                            # API controllers for managing requests 
    │ └ 󰌛 ProductsController.cs 
      Exceptions
    │ │ 󰌛 JsonParseException.cs
    │ └ 󰌛 ServiceUnavailableException.cs
-     Infrastructure                               # Core infrastructure for external API clients 
+     Infrastructure                         # Core infrastructure for external API clients 
    │ └ 󰌛 ProductApiClient.cs 
      Interfaces 
    │ │ 󰌛 IProductApiClient.cs 
@@ -39,13 +39,13 @@
      Models
    │ │ 󰌛 Product.cs 
    │ └ 󰌛 ProductSourceOptions.cs 
-     Services                                     # Business logic for handling product data
+     Services                               # Business logic for handling product data
    │ │ 󰌛 ApiResponseHandler.cs 
    │ └ 󰌛 ProductService.cs 
    │ 󰗀 Homework.Api.csproj 
    │ 󰌛 Program.cs 
-   └ 󰘦 appsettings.json                             # Configuretaion file for environment variables
-   Homework.Api.Tests                             # Unit tests for backend API
+   └ 󰘦 appsettings.json                       # Configuration file for environment variables
+   Homework.Api.Tests                       # Unit tests for backend API
      Controllers
    │ └ 󰌛 ProductControllerTests.cs 
      Factories 
@@ -59,7 +59,7 @@
    │ │ 󰌛 ApiResponseHandlerTests.cs 
    │ └ 󰌛 ProductServiceTests.cs 
    └ 󰗀 Homework.Api.Tests.csproj 
-   Homework.Client                                # Frontend client in React and TypeScript 
+   Homework.Client                          # Frontend client in React and TypeScript 
      src 
    │   components 
    │ │ │  MainTitle.tsx 
@@ -149,5 +149,4 @@ To execute all backend unit tests:
 ```bash
 cd Homework.Api.Tests
 dotnet test
-```
 ```
