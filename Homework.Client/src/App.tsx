@@ -1,11 +1,11 @@
 import React from 'react';
 import NavBar from './components/NavBar';
-import ProductList from './components/ProductList';
+import ProductGrid from './components/ProductGrid';
 
 const App: React.FC = () => (
     <div className="app">
         <NavBar />
-        <ProductList />
+        <ProductGrid />
     </div>
 );
 
