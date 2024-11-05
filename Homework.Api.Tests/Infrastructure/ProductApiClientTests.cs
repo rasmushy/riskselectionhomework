@@ -20,9 +20,6 @@ namespace Homework.Api.Tests.Infrastructure
         private readonly Mock<HttpMessageHandler> _httpMessageHandlerMock;
         private readonly ProductApiClient _client;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ProductApiClientTests"/> class, setting up mocks and the client under test.
-        /// </summary>
         public ProductApiClientTests()
         {
             _httpMessageHandlerMock = new Mock<HttpMessageHandler>();

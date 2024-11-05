@@ -20,9 +20,6 @@ namespace Homework.Api.Tests.Controllers
         private readonly Mock<IProductService> _productServiceMock;
         private readonly Mock<ILogger<ProductsController>> _loggerMock;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ProductControllerTests"/> class, setting up mocks and the controller under test.
-        /// </summary>
         public ProductControllerTests()
         {
             _productServiceMock = new Mock<IProductService>();

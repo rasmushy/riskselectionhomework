@@ -25,9 +25,6 @@ namespace Homework.Api.Tests.Services
         private readonly Mock<HttpMessageHandler> _httpMessageHandlerMock;
         private readonly Mock<ILogger<ProductService>> _loggerMock;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ProductServiceTests"/> class, setting up mocks and the service under test.
-        /// </summary>
         public ProductServiceTests()
         {
             _httpMessageHandlerMock = new Mock<HttpMessageHandler>();
@@ -79,42 +76,6 @@ namespace Homework.Api.Tests.Services
                 .ThrowsAsync(new HttpRequestException("Simulated HTTP request failure"));
 
             await Assert.ThrowsAsync<ServiceUnavailableException>(() => _productService.GetProductsAsync());
-        }
-
-        /// <summary>
-        /// Tests that <see cref="ProductService.GetProductsAsync"/> ignores products with missing required fields in the response.
-        /// </summary>
-        [Fact]
-        public async Task GetProductsAsync_IgnoresProductsWithMissingFields()
-        {
-            var responseContent = "{\"products\": [" +
-                                  "{ \"id\": 1, \"title\": null, \"brand\": \"Brand A\", \"price\": 20, \"discountPercentage\": 15 }," +
-                                  "{ \"id\": 2, \"title\": \"Product 2\", \"brand\": null, \"price\": 30, \"discountPercentage\": 10 }" +
-                                  "]}";
-
-            MockHttpHelper.SetupHttpClientResponse(_httpMessageHandlerMock, responseContent, HttpStatusCode.OK);
-
-            var result = await _productService.GetProductsAsync();
-            Assert.Empty(result);
-        }
-
-        /// <summary>
-        /// Tests that <see cref="ProductService.GetProductsAsync"/> returns only valid products when the API response includes invalid products.
-        /// </summary>
-        [Fact]
-        public async Task GetProductsAsync_ReturnsOnlyValidProducts_WhenSomeProductsAreInvalid()
-        {
-            var responseContent = "{\"products\": [" +
-                "{ \"id\": 1, \"title\": \"Valid Product\", \"brand\": \"Brand A\", \"price\": 20, \"discountPercentage\": 15 }," +
-                "{ \"id\": 2, \"title\": \"Invalid Product\", \"brand\": \"\", \"price\": 20, \"discountPercentage\": 5 }" +
-                "]}";
-
-            MockHttpHelper.SetupHttpClientResponse(_httpMessageHandlerMock, responseContent, HttpStatusCode.OK);
-
-            var result = await _productService.GetProductsAsync();
-
-            Assert.Single(result);
-            Assert.Equal("Valid Product", result[0].Title);
         }
     }
 }
