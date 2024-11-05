@@ -36,20 +36,22 @@ const ProductList: React.FC = () => {
 
     return (
         <div className="main">
+          <div className="content">
             <h2 className="products-title">Products</h2>
-                <div className="search-bar">
-                {trendingProduct && (
-                    <div className="trending-product">
-                        <strong>Trending product:</strong> {trendingProduct.title}
-                    </div>
-                )}
-                    <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
-                </div>
+            <div className="search-bar">
+              {trendingProduct && (
+                  <div className="trending-product">
+                      <strong>Trending product:</strong> {trendingProduct.title}
+                  </div>
+              )}
+                  <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+            </div>
             <div className="product-grid">
                 {filteredProducts.map(product => (
                     <ProductCard key={product.id} product={product} />
                 ))}
             </div>
+          </div>
         </div>
     );
 };
