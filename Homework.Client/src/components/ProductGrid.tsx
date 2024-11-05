@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { fetchProducts } from '../api';
 import { Product } from '../interfaces/product';
 import ProductCard from './ProductCard';
-import HeaderTitle from './HeaderTitle';
+import MainTitle from './MainTitle';
 import SearchContainer from './SearchContainer';
 
 /**
@@ -48,7 +48,7 @@ const ProductGrid: React.FC = () => {
     return (
         <div className="main">
             <div className="main-content">
-                <HeaderTitle title="Products" />
+                <MainTitle title="Products" />
                 <SearchContainer 
                     searchTerm={searchTerm} 
                     setSearchTerm={setSearchTerm} 
