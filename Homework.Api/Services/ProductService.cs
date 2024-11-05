@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Homework.Api.Interfaces;
 using Homework.Api.Models;
@@ -27,11 +26,9 @@ namespace Homework.Api.Services
             try
             {
                 var products = await _productApiClient.FetchProductsAsync();
+                _logger.LogInformation("Fetched {Count} products from the external API.", products.Count);
 
-                var filteredProducts = FilterValidProducts(products);
-                _logger.LogInformation("{Count} products passed the filter criteria.", filteredProducts.Count);
-
-                return filteredProducts;
+                return products;
             }
             catch (JsonException ex)
             {
@@ -43,16 +40,6 @@ namespace Homework.Api.Services
                 _logger.LogError(ex, "Failed to fetch products due to a network issue.");
                 throw new ServiceUnavailableException("External service is unavailable", ex);
             }
-        }
-
-        private List<Product> FilterValidProducts(IEnumerable<Product> products)
-        {
-            return products
-                .Where(p => 
-                    p.DiscountPercentage >= 10 && 
-                    !string.IsNullOrEmpty(p.Brand) && 
-                    !string.IsNullOrEmpty(p.Title))
-                .ToList();
         }
     }
 }

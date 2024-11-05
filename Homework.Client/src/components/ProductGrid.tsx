@@ -5,6 +5,8 @@ import ProductCard from './ProductCard';
 import MainTitle from './MainTitle';
 import SearchContainer from './SearchContainer';
 
+const MIN_DISCOUNT_PERCENTAGE = 10;
+
 /**
  * ProductGrid component displays a list of products. Including a product title, 
  * search functionality, and a trending product indicator.
@@ -29,10 +31,10 @@ const ProductGrid: React.FC = () => {
     const loadAndFilterProducts = async () => {
         try {
             const fetchedProducts = await fetchProducts();
-            const discountedProducts = filterByDiscount(fetchedProducts, 10);
-            setProducts(discountedProducts);
-            setFilteredProducts(discountedProducts);
-            setTrendingProduct(findTrendingProduct(discountedProducts));
+            const validProducts = filterValidProducts(fetchedProducts);
+            setProducts(validProducts);
+            setFilteredProducts(validProducts);
+            setTrendingProduct(findTrendingProduct(validProducts));
         } catch (error) {
             console.error("Failed to load products:", error);
         }
@@ -47,13 +49,17 @@ const ProductGrid: React.FC = () => {
     };
 
     /**
-     * Filters products based on a minimum discount percentage.
+     * Filters products based on a minimum discount percentage and checks for non-empty brand and title.
      * @param {Product[]} products
-     * @param {number} minDiscount - Minimum discount percentage.
      * @returns {Product[]}
      */
-    const filterByDiscount = (products: Product[], minDiscount: number): Product[] => {
-        return products.filter(product => product.discountPercentage >= minDiscount);
+    const filterValidProducts = (products: Product[]): Product[] => {
+        return products.filter(
+            product =>
+                product.discountPercentage >= MIN_DISCOUNT_PERCENTAGE &&
+                product.brand &&
+                product.title
+        );
     };
 
     /**
