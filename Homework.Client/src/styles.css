@@ -83,7 +83,7 @@
     margin: 0 var(--padding-large);
 }
 
-.header-title {
+.main-title {
     font-size: var(--font-size-title);
     font-weight: bold;
     margin-bottom: var(--padding-medium);
@@ -188,7 +188,7 @@
         display: flex;
     }
 
-    .header-title {
+    .main-title {
         margin-bottom: var(--padding-large);
     }
     

@@ -1,6 +1,6 @@
 import React from 'react';
 
-interface HeaderTitleProps {
+interface MainTitleProps {
     title: string;
 }
 
@@ -9,8 +9,8 @@ interface HeaderTitleProps {
  * @param title - The title text to display.
  * @returns {JSX.Element} The header title component.
  */
-const HeaderTitle: React.FC<HeaderTitleProps> = ({ title }) => (
-    <h2 className="header-title">{title}</h2>
+const MainTitle: React.FC<MainTitleProps> = ({ title }) => (
+    <h2 className="main-title">{title}</h2>
 );
 
-export default HeaderTitle;
+export default MainTitle;
