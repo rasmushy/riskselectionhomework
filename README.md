@@ -22,60 +22,34 @@
 
 ## Project Structure
 ```
-  ~/riskselectionhomework
-   Homework.Api                             # Backend API in ASP.NET Core
-     Controllers                            # API controllers for managing requests 
-   │ └ 󰌛 ProductsController.cs 
-     Exceptions
-   │ │ 󰌛 JsonParseException.cs
-   │ └ 󰌛 ServiceUnavailableException.cs
-     Infrastructure                         # Core infrastructure for external API clients 
-   │ └ 󰌛 ProductApiClient.cs 
-     Interfaces 
-   │ │ 󰌛 IProductApiClient.cs 
-   │ └ 󰌛 IProductService.cs 
-     Middleware
-   │ └ 󰌛 ErrorHandlerMiddleware.cs 
-     Models
-   │ │ 󰌛 Product.cs 
-   │ └ 󰌛 ProductSourceOptions.cs 
-     Services                               # Business logic for handling product data
-   │ │ 󰌛 ApiResponseHandler.cs 
-   │ └ 󰌛 ProductService.cs 
-   │ 󰗀 Homework.Api.csproj 
-   │ 󰌛 Program.cs 
-   └ 󰘦 appsettings.json                       # Configuration file for environment variables
-   Homework.Api.Tests                       # Unit tests for backend API
-     Controllers
-   │ └ 󰌛 ProductControllerTests.cs 
-     Factories 
-   │ └ 󰌛 MockHttpMessageHandlerFactory.cs 
-     Helpers 
-   │ │ 󰌛 MockHttpHelper.cs 
-   │ └ 󰌛 MockHttpMessageHandler.cs 
-     Infrastructure 
-   │ └ 󰌛 ProductApiClientTests.cs 
-     Services 
-   │ │ 󰌛 ApiResponseHandlerTests.cs 
-   │ └ 󰌛 ProductServiceTests.cs 
-   └ 󰗀 Homework.Api.Tests.csproj 
-   Homework.Client                          # Frontend client in React and TypeScript 
-     src 
-   │   components 
-   │ │ │  MainTitle.tsx 
-   │ │ │  NavBar.tsx
-   │ │ │  ProductCard.tsx 
-   │ │ │  ProductGrid.tsx 
-   │ │ │  SearchBar.tsx 
-   │ │ │  SearchContainer.tsx 
-   │ │ └  TrendingProduct.tsx 
-   │   interfaces 
-   │ │ └ 󰛦 product.ts 
-   │ │  App.tsx 
-   │ │ 󰛦 api.ts 
-   │ │ 󰛦 config.ts 
-   │ │  index.tsx 
-   │ └ 󰌜 styles.css 
+~/riskselectionhomework
+├── /Homework.Api             # Backend API in ASP.NET Core
+│   ├── /Controllers          # API controllers
+│   ├── /Exceptions
+│   ├── /Infrastructure       # External API clients
+│   ├── /Interfaces
+│   ├── /Middleware
+│   ├── /Models
+│   ├── /Services             # Business logic
+│   ├── Program.cs            # Main application entry point
+│   └── appsettings.json      # Configuration file
+│
+├── /Homework.Api.Tests       # Unit tests for backend API
+│   ├── /Controllers
+│   ├── /Factories            # MockFactory
+│   ├── /Helpers              # MockHelpers
+│   ├── /Infrastructure 
+│   └── /Services 
+│
+└── /Homework.Client          # Frontend client in React and TypeScript
+    └── /src
+        ├── /components
+        ├── /interfaces
+        ├── App.tsx
+        ├── api.ts
+        ├── config.ts
+        ├── index.tsx
+        └── styles.css
 ```
 
 ## Prerequisites
