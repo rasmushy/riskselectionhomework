@@ -4,9 +4,8 @@ namespace Homework.Api.Exceptions
 {
     public class JsonParseException : Exception
     {
-        public JsonParseException(string message, Exception innerException)
-            : base(message, innerException)
-        {
-        }
+        public JsonParseException(string message) : base(message) { }
+
+        public JsonParseException(string message, Exception innerException) : base(message, innerException) { }
     }
 }

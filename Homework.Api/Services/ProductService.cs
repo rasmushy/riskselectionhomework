@@ -8,6 +8,9 @@ using System.Text.Json;
 
 namespace Homework.Api.Services
 {
+    /// <summary>
+    /// Coordinates the retrieval of products from an external API, using <see cref="ProductApiClient"/>
+    /// to fetch and return the final product data list.
     public class ProductService : IProductService
     {
         private readonly IProductApiClient _productApiClient;
@@ -28,17 +31,31 @@ namespace Homework.Api.Services
                 var products = await _productApiClient.FetchProductsAsync();
                 _logger.LogInformation("Fetched {Count} products from the external API.", products.Count);
 
+                if (products.Count == 0)
+                {
+                    _logger.LogWarning("No products were returned from the external API.");
+                }
+                else
+                {
+                    _logger.LogInformation("{Count} products successfully retrieved.", products.Count);
+                }
+
                 return products;
             }
             catch (JsonException ex)
             {
-                _logger.LogError(ex, "Failed to parse products from API response.");
+                _logger.LogError(ex, "JSON parsing error: Failed to parse products from the external API response.");
                 throw new JsonParseException("Invalid JSON format in product data", ex);
             }
             catch (HttpRequestException ex)
             {
-                _logger.LogError(ex, "Failed to fetch products due to a network issue.");
+                _logger.LogError(ex, "Network error: Failed to fetch products due to a network issue while accessing external API.");
                 throw new ServiceUnavailableException("External service is unavailable", ex);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error occurred during product fetch.");
+                throw; 
             }
         }
     }

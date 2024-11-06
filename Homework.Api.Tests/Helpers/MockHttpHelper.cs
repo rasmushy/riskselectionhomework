@@ -7,21 +7,24 @@ using Moq.Protected;
 
 namespace Homework.Api.Tests.Helpers
 {
-    public static class MockHttpHelper
+  /// <summary>
+  /// Provides helper method for configuring mocked HTTP client responses.
+  /// </summary>
+  public static class MockHttpHelper
+  {
+    public static void SetupHttpClientResponse(Mock<HttpMessageHandler> httpMessageHandlerMock, string content, HttpStatusCode statusCode)
     {
-        public static void SetupHttpClientResponse(Mock<HttpMessageHandler> httpMessageHandlerMock, string content, HttpStatusCode statusCode)
-        {
-            var mockResponse = new HttpResponseMessage(statusCode)
-            {
-                Content = new StringContent(content, System.Text.Encoding.UTF8, "application/json")
-            };
+      var mockResponse = new HttpResponseMessage(statusCode)
+      {
+        Content = new StringContent(content, System.Text.Encoding.UTF8, "application/json")
+      };
 
-            httpMessageHandlerMock.Protected()
-                .Setup<Task<HttpResponseMessage>>(
-                    "SendAsync",
-                    ItExpr.IsAny<HttpRequestMessage>(),
-                    ItExpr.IsAny<CancellationToken>())
-                .ReturnsAsync(mockResponse);
-        }
+      httpMessageHandlerMock.Protected()
+        .Setup<Task<HttpResponseMessage>>(
+            "SendAsync",
+            ItExpr.IsAny<HttpRequestMessage>(),
+            ItExpr.IsAny<CancellationToken>())
+        .ReturnsAsync(mockResponse);
     }
+  }
 }

@@ -8,6 +8,11 @@ using Homework.Api.Exceptions;
 
 namespace Homework.Api.Controllers
 {
+
+    /// <summary>
+    /// Provides endpoints to retrieve product data, coordinating with <see cref="ProductService"/>
+    /// to fetch and serve the products to the client.
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class ProductsController : ControllerBase
