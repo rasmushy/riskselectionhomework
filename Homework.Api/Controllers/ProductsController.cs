@@ -9,53 +9,31 @@ using Homework.Api.Exceptions;
 namespace Homework.Api.Controllers
 {
 
-    /// <summary>
-    /// Provides endpoints to retrieve product data, coordinating with <see cref="ProductService"/>
-    /// to fetch and serve the products to the client.
-    /// </summary>
-    [Route("api/[controller]")]
-    [ApiController]
-    public class ProductsController : ControllerBase
+  [Route("api/[controller]")]
+  [ApiController]
+  public class ProductsController : ControllerBase
+  {
+    private readonly IProductService _productService;
+    private readonly ILogger<ProductsController> _logger;
+
+    public ProductsController(IProductService productService, ILogger<ProductsController> logger)
     {
-        private readonly IProductService _productService;
-        private readonly ILogger<ProductsController> _logger;
-
-        public ProductsController(IProductService productService, ILogger<ProductsController> logger)
-        {
-            _productService = productService;
-            _logger = logger;
-        }
-
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
-        {
-            try
-            {
-                var products = await _productService.GetProductsAsync();
-
-                if (products == null || products.Count == 0)
-                {
-                    _logger.LogInformation("No products found.");
-                    return NotFound("No products available.");
-                }
-
-                return Ok(products);
-            }
-            catch (ServiceUnavailableException ex)
-            {
-                _logger.LogError(ex, "Service is currently unavailable.");
-                return StatusCode(503, "Service is currently unavailable. Please try again later.");
-            }
-            catch (JsonParseException ex)
-            {
-                _logger.LogError(ex, "Failed to parse products data.");
-                return StatusCode(500, "An error occurred while processing product data.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An unexpected error occurred while fetching products.");
-                return StatusCode(500, "An internal server error occurred.");
-            }
-        }
+      _productService = productService;
+      _logger = logger;
     }
+
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
+    {
+      var products = await _productService.GetProductsAsync();
+
+      if (products == null || products.Count == 0)
+      {
+        _logger.LogInformation("No products found.");
+        return NotFound("No products available.");
+      }
+
+      return Ok(products);
+    }
+  }
 }

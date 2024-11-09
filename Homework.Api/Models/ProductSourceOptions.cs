@@ -4,6 +4,12 @@ namespace Homework.Api.Models
 {
     public class ProductSourceOptions
     {
-        public List<string> ProductSourceUrls { get; set; } = new List<string>();
+        public List<ProductSource> Sources { get; set; } = new();
+    }
+
+    public class ProductSource
+    {
+      public required string Url { get; set; }
+      public required string ParsingStrategy { get; set; }
     }
 }

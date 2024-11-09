@@ -1,88 +1,63 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Homework.Api.Interfaces;
 using Homework.Api.Models;
-using Homework.Api.Services;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Homework.Api.Infrastructure
 {
-    /// <summary>
-    /// Manages communication with external product APIs, using <see cref="ApiResponseHandler"/>
-    /// to parse and validate the response data.
-    /// </summary>
     public class ProductApiClient : IProductApiClient
     {
         private readonly HttpClient _httpClient;
         private readonly ProductSourceOptions _options;
         private readonly ILogger<ProductApiClient> _logger;
+        private readonly ParsingStrategyResolver _parsingStrategyResolver;
 
-        public ProductApiClient(HttpClient httpClient, IOptions<ProductSourceOptions> options, ILogger<ProductApiClient> logger)
+        public ProductApiClient(
+            HttpClient httpClient,
+            IOptions<ProductSourceOptions> options,
+            ILogger<ProductApiClient> logger,
+            ParsingStrategyResolver parsingStrategyResolver)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _parsingStrategyResolver = parsingStrategyResolver ?? throw new ArgumentNullException(nameof(parsingStrategyResolver));
         }
 
         public async Task<List<Product>> FetchProductsAsync()
         {
-            if (_options.ProductSourceUrls == null || !_options.ProductSourceUrls.Any())
+          var products = new List<Product>();
+
+          foreach (var source in _options.Sources)
+          {
+            var strategy = _parsingStrategyResolver.GetStrategy(source.ParsingStrategy);
+            if (strategy == null)
             {
-                _logger.LogWarning("No URLs provided in ProductSourceUrls. Ensure that configuration is set correctly.");
-                return new List<Product>();
+              _logger.LogWarning("No parsing strategy found for URL {Url} with strategy {Strategy}.", source.Url, source.ParsingStrategy);
+              continue;
             }
 
-            var products = new List<Product>();
+            _logger.LogInformation("Using strategy {Strategy} for URL {Url}.", source.ParsingStrategy, source.Url);
 
-            foreach (var url in _options.ProductSourceUrls)
-            {
-                var productList = await FetchProductsFromUrlAsync(url);
-                products.AddRange(productList);
-            }
+            var productList = await FetchProductsFromUrlAsync(source.Url, strategy);
 
-            return products;
+            _logger.LogInformation("Fetched {Count} products from {Url}.", productList.Count, source.Url);
+            products.AddRange(productList);
+          }
+
+          _logger.LogInformation("Total products fetched: {Count}", products.Count);
+          return products;
         }
 
-        /// <summary>
-        /// Fetches products from a single URL and processes the response.
-        /// </summary>
-        private async Task<List<Product>> FetchProductsFromUrlAsync(string url)
+        private async Task<List<Product>> FetchProductsFromUrlAsync(string url, IApiResponseParsingStrategy parsingStrategy)
         {
-            try
-            {
-                var response = await _httpClient.GetAsync(url);
-                return await ProcessResponseAsync(response, url);
-            }
-            catch (HttpRequestException ex)
-            {
-                _logger.LogError(ex, "Network error when fetching products from {Url}", url);
-                return new List<Product>();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error when fetching products from {Url}", url);
-                return new List<Product>();
-            }
-        }
-
-        /// <summary>
-        /// Processes the HTTP response and deserializes the product list.
-        /// </summary>
-        private async Task<List<Product>> ProcessResponseAsync(HttpResponseMessage response, string url)
-        {
-            if (response.IsSuccessStatusCode)
-            {
-                return await ApiResponseHandler.HandleResponse(response);
-            }
-            else
-            {
-                _logger.LogWarning("Failed to fetch products from {Url} with status code {StatusCode}", url, response.StatusCode);
-                return new List<Product>();
-            }
+            var response = await _httpClient.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+            return await parsingStrategy.ParseResponseAsync(response);
         }
     }
 }
